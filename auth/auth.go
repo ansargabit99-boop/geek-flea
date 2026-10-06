@@ -2,7 +2,7 @@ package auth
 
 import (
 	"encoding/json"
-	"geekflea/auth"
+	
 	"net/http"
 	"os"
 	"strings"
@@ -122,7 +122,7 @@ func Login(w http.ResponseWriter,r*http.Request,pool *pgxpool.Pool) {
 
 }
 func GetSelfInformation(w http.ResponseWriter,r *http.Request,pool *pgxpool.Pool){
-	userId,ok :=r.Context().Value(auth.UserIDKey).(int)
+	userId,ok :=r.Context().Value(UserIDKey).(int)
 	if !ok {
 		http.Error(w,"unauthorised",http.StatusUnauthorized)
 		return

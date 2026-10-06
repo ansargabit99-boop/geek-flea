@@ -66,3 +66,4 @@ func getUser(w http.ResponseWriter,r *http.Request,pool *pgxpool.Pool) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(respondData)
 }
+

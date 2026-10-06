@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"geekflea/auth"
 	"net/http"
 	"os"
 	"strings"
@@ -119,4 +120,25 @@ func Login(w http.ResponseWriter,r*http.Request,pool *pgxpool.Pool) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(helkData{Token:token,Id:id})
 
+}
+func GetSelfInformation(w http.ResponseWriter,r *http.Request,pool *pgxpool.Pool){
+	userId,ok :=r.Context().Value(auth.UserIDKey).(int)
+	if !ok {
+		http.Error(w,"unauthorised",http.StatusUnauthorized)
+		return
+	}
+	type userData struct {
+		Id int `json:"id"`
+		Name string `json:"name"`
+		Gmail string `json:"gmail"`
+		Number string `json:"number"`
+	}
+	var user = userData{}
+	err := pool.QueryRow(r.Context(),"SELECT id,name,gmail,number FROM users WHERE id=$1",userId).Scan(&user.Id,&user.Name,&user.Gmail,&user.Number)
+	if err != nil {
+		errorMessageHandler(w,http.StatusInternalServerError,"something went wrong")
+	}
+	w.Header().Set("Content-Type","application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }

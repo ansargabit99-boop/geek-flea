@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,6 +9,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+type contextKey string
+
+const UserIDKey contextKey = "userID"
 
 func ValidateToken(tokenStr string) (jwt.MapClaims, error) { //what does things also do here
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
@@ -42,7 +47,12 @@ func Middleware(next http.Handler) http.Handler {
 			http.Error(w, "bad token", http.StatusUnauthorized)
 			return
 		}
-		fmt.Println("userId", claims["id"])
-		next.ServeHTTP(w, r)
+		idfloat,ok := claims["id"].(float64)
+		if !ok {
+			http.Error(w,"something went wrong",http.StatusInternalServerError)
+			return 
+		}
+		ctx:=context.WithValue(r.Context(),UserIDKey,int(idfloat))
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"geekflea/auth"
 	data "geekflea/database"
+	"geekflea/users"
 	"log"
 	"net/http"
-	"geekflea/auth"
 	"os"
+
 	"github.com/joho/godotenv"
 )
 
@@ -23,6 +25,7 @@ func main() {
 	mux:=http.NewServeMux()
 	auth.AuthHandlers(mux,pool)
 	port:= os.Getenv("PORT")
+	users.UsersHandler(mux,pool)
 	log.Fatal(http.ListenAndServe(":"+port,mux))
 
 }

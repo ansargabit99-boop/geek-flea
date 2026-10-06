@@ -29,7 +29,7 @@ func ValidateToken(tokenStr string) (jwt.MapClaims, error) { //what does things 
 
 }
 
-func middleware(next http.Handler) http.Handler {
+func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {

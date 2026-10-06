@@ -3,6 +3,7 @@ package users
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -37,6 +38,28 @@ func getUsers(w http.ResponseWriter ,r *http.Request,pool *pgxpool.Pool) {
 	}
 	if err  = rows.Err();err != nil {
 		http.Error(w,err.Error(),http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type","application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(respondData)
+}
+func getUser(w http.ResponseWriter,r *http.Request,pool *pgxpool.Pool) {
+	strId := r.PathValue("id")
+	id,err := strconv.Atoi(strId)
+	if err != nil {
+		errorMessageHandler(w,http.StatusBadRequest,"invalid Id")
+	}
+	type user struct {
+		Id int `json:"id"`
+		Name string `json:"name"`
+		Gmail string `json:"gmail"`
+		Number string `json:"Number"`
+	}
+	var respondData = user{}
+	err = pool.QueryRow(r.Context(),"SELECT * FROM users WHERE id=$1",id).Scan(&respondData.Id,&respondData.Name,&respondData.Gmail,&respondData.Number)
+	if err != nil {
+		errorMessageHandler(w, http.StatusInternalServerError,"something went wrong")
 		return
 	}
 	w.Header().Set("Content-Type","application/json")

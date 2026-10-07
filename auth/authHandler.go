@@ -16,4 +16,7 @@ func AuthHandlers(mux *http.ServeMux,pool *pgxpool.Pool) {
 	mux.Handle("GET /me",Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		GetSelfInformation(w,r,pool)
 	})))
+	mux.Handle("PUT /me",Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		changeSelfInformation(w,r,pool)
+	})))
 }

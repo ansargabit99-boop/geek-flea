@@ -2,7 +2,8 @@ package auth
 
 import (
 	"encoding/json"
-	
+	"fmt"
+
 	"net/http"
 	"os"
 	"strings"
@@ -141,4 +142,78 @@ func GetSelfInformation(w http.ResponseWriter,r *http.Request,pool *pgxpool.Pool
 	w.Header().Set("Content-Type","application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
+}
+func changeSelfInformation(w http.ResponseWriter,r *http.Request,pool *pgxpool.Pool) {
+	userId :=r.Context().Value(UserIDKey).(int)
+	type receivedChanges struct {
+		Name string `json:"name"`
+		Gmail string `json:"gmail"`
+		Number string `json:"number"`
+		Password string `json:"password"`
+		NewPass string `json:"newPass"`
+	}
+	var personData = receivedChanges{}
+	err := json.NewDecoder(r.Body).Decode(&personData)
+	if err != nil {
+		errorMessageHandler(w,http.StatusBadRequest,"invalid body")
+		return
+	}
+	query:="UPDATE users SET "
+	i:=1
+	var newQuery []string
+	 var values []any
+	if personData.Name != "" {
+		newQuery = append(newQuery,fmt.Sprintf("name = $%v",i))
+		values = append(values,personData.Name)
+		i++
+	}
+	if personData.Gmail != "" {
+		newQuery = append(newQuery,fmt.Sprintf("gmail=$%v",i))
+		values= append(values,personData.Gmail)
+	    i++
+	}
+	if personData.Number != ""{
+		newQuery = append(newQuery,fmt.Sprintf("number=$%v",i))
+		values= append(values,personData.Number)
+	    i++
+	}
+	if personData.Password != "" {
+		type userData struct {
+		Id int `json:"id"`
+		Name string `json:"name"`
+		Gmail string `json:"gmail"`
+		Number string `json:"number"`
+		Password string `json:"password"`
+	}
+	    var user = userData{}
+		err := pool.QueryRow(r.Context(),`SELECT id,name,gmail,number,password FROM users WHERE id=$1`,userId).Scan(&user.Id,&user.Name,&user.Gmail,&user.Number,&user.Password)
+		if err != nil {
+			w.Header().Set("Content-Type","application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(errorResponse{message: "invalid credentials"})
+			return
+		}
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password),[]byte(personData.Password,))
+		if err !=nil {
+			errorMessageHandler(w,http.StatusBadRequest,"invalid credentials")
+			return
+		}
+		newQuery = append(newQuery,fmt.Sprintf("password=$%v",i))
+		hashed,err := bcrypt.GenerateFromPassword([]byte(personData.NewPass),bcrypt.DefaultCost,)
+		values = append(values,hashed)
+		i++
+	}
+	if len(newQuery) == 0 {
+		errorMessageHandler(w,http.StatusBadRequest,"nothing to change")
+		return
+	}
+	joined := strings.Join(newQuery,", ")
+	finalQuery := query + joined + fmt.Sprintf(" WHERE id=$%v",i)
+	values = append(values,userId)
+	_,err = pool.Exec(r.Context(),finalQuery,values...)
+	if err != nil {
+		errorMessageHandler(w,http.StatusInternalServerError,"something went wrong")
+		return
+	}
+
 }

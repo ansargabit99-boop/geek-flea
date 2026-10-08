@@ -36,7 +36,7 @@ func getAdverts(w http.ResponseWriter,r *http.Request,pool *pgxpool.Pool) {
 	defer rows.Close()
 	for rows.Next() {
 		var u advertsStruct
-		err:= rows.Scan(&u.Id,&u.User_id,&u.Name,&u.Desc,u.Price)
+		err:= rows.Scan(&u.Id,&u.User_id,&u.Name,&u.Desc,&u.Price)
 
 		if err != nil {
 			w.Header().Set("Content-Type","application/json")
@@ -60,7 +60,7 @@ func getAdvert(w http.ResponseWriter,r *http.Request,pool *pgxpool.Pool) {
 		return
 	}
 	var advert advertsSkelet
-	err = pool.QueryRow(r.Context(),"SELECT * FROM advets WHERE id=$1",idNum).Scan(&advert.Id,&advert.Name,&advert.User_id,&advert.Gmail,&advert.Number)
+	err = pool.QueryRow(r.Context(),"SELECT * FROM advets WHERE id=$1",idNum).Scan(&advert.Id,&advert.Name,&advert.User_id,&advert.Desc,&advert.Price)
 	if err != nil {
 		w.Header().Set("Content-Type","application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -87,7 +87,7 @@ func postAdverts(w http.ResponseWriter, r *http.Request,pool *pgxpool.Pool) {
 		return
 	}
 	var resData advertsSkelet
-	err =  pool.QueryRow(r.Context(),"INSERT INTO adverts (name,user_id,description,price)",advert.Name,userId,advert.Desc,advert.Price).Scan(&resData.Id,resData.User_id,&resData.Name,&resData.Desc,&resData.Price)
+	err =  pool.QueryRow(r.Context(),"INSERT INTO adverts (name,user_id,description,price)",advert.Name,userId,advert.Desc,advert.Price).Scan(&resData.Id,&resData.User_id,&resData.Name,&resData.Desc,&resData.Price)
 	if err != nil {
 		w.Header().Set("Content-Type","application/json")
 		w.WriteHeader(http.StatusOK)

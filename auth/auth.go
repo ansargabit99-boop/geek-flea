@@ -214,6 +214,6 @@ func changeSelfInformation(w http.ResponseWriter,r *http.Request,pool *pgxpool.P
 	if err != nil {
 		errorMessageHandler(w,http.StatusInternalServerError,"something went wrong")
 		return
-	}
+	}	
 
 }

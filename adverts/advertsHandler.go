@@ -78,7 +78,7 @@ func postAdverts(w http.ResponseWriter, r *http.Request,pool *pgxpool.Pool) {
 		Desc string `json:"Desc"`
 		Price int `json:"price"`
 	}
-	var advert advertThing
+	advert:=&advertThing{}
 	err:= json.NewDecoder(r.Body).Decode(advert)
 	if err != nil {
 		w.Header().Set("Content-Type","application/json")

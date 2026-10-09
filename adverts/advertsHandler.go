@@ -99,3 +99,37 @@ func postAdverts(w http.ResponseWriter, r *http.Request,pool *pgxpool.Pool) {
 	json.NewEncoder(w).Encode(resData)
 
 }
+
+func deleteAdverts(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool) {
+    advertID, err := strconv.Atoi(r.PathValue("id"))
+    if err != nil || advertID <= 0 {
+        http.Error(w, `{"message":"invalid advert ID"}`, http.StatusBadRequest)
+        return
+    }
+
+    tag, err := pool.Exec(
+        r.Context(),
+        "DELETE FROM adverts WHERE id = $1",
+        advertID,
+    )
+
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(errorRe{Message: "something went wrong"})
+        return
+    }
+
+    if tag.RowsAffected() == 0 {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusNotFound)
+        json.NewEncoder(w).Encode(errorRe{Message: "advert not found"})
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{
+        "message": "advert deleted successfully",
+    })
+}

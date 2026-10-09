@@ -13,4 +13,10 @@ func advertsHandler(mux *http.ServeMux,pool *pgxpool.Pool) {
 	mux.Handle("GET /adverts/{id}",auth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		getAdvert(w,r,pool)
 	})))
+	mux.Handle("POST /adverts",auth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		postAdverts(w,r,pool)
+	})))
+	mux.Handle("DELETE /adverts/{id}",auth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		deleteAdverts(w,r,pool)
+	})))
 }	

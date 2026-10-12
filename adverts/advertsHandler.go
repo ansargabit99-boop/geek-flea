@@ -2,9 +2,11 @@ package adverts
 
 import (
 	"encoding/json"
+	"fmt"
+	"geekflea/auth"
 	"net/http"
 	"strconv"
-	"geekflea/auth"
+	"strings"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 type  errorRe struct {
@@ -132,4 +134,84 @@ func deleteAdverts(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool) {
     json.NewEncoder(w).Encode(map[string]string{
         "message": "advert deleted successfully",
     })
+}
+
+func changeAdverts(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool) {
+	type changes struct {
+		Name        string   `json:"name"`
+		Description string   `json:"description"`
+		Price       *float64 `json:"price"`
+	}
+
+	advertId := r.PathValue("id")
+	numAdvertId, err := strconv.Atoi(advertId)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorRe{Message: "invalid id"})
+		return
+	}
+
+	data := &changes{}
+
+	err = json.NewDecoder(r.Body).Decode(data)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorRe{Message: "invalid body"})
+		return
+	}
+
+	query := "UPDATE adverts SET "
+	var sets []string
+	var values []any
+	i := 1
+
+	if data.Name != "" {
+		sets = append(sets, fmt.Sprintf("name=$%d", i))
+		values = append(values, data.Name)
+		i++
+	}
+
+	if data.Description != "" {
+		sets = append(sets, fmt.Sprintf("description=$%d", i))
+		values = append(values, data.Description)
+		i++
+	}
+
+	if data.Price != nil {
+		sets = append(sets, fmt.Sprintf("price=$%d", i))
+		values = append(values, *data.Price)
+		i++
+	}
+
+	if len(values) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorRe{Message: "nothing to change"})
+		return
+	}
+
+	query += strings.Join(sets, ", ")
+	query += fmt.Sprintf(" WHERE id=$%d", i)
+	values = append(values, numAdvertId)
+
+	tag, err := pool.Exec(r.Context(), query, values...)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(errorRe{Message: "something went wrong"})
+		return
+	}
+
+	if tag.RowsAffected() == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(errorRe{Message: "advert not found"})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(errorRe{Message: "successfully changed"})
 }
